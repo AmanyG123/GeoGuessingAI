@@ -1,0 +1,17 @@
+#Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+#Data/results
+data/
+results/
+.checkpoints/
+logs/
+
+#Others
+.idea/
+*.ipynb_checkpoints

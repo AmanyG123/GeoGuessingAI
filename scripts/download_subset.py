@@ -6,9 +6,12 @@ from PIL import Image
 
 
 HF_DATASET = "deboradum/GeoGuessr-countries"
-MAX_PER_COUNTRY = 20
-NUM_COUNTRIES = 4
-IMAGE_SIZE = (224, 224)
+MAX_PER_COUNTRY = 245
+NUM_COUNTRIES = 25
+IMAGE_SIZE = (256, 256)
+MAX_TOTAL_IMAGES = MAX_PER_COUNTRY * NUM_COUNTRIES
+MAX_SCANNED_EXAMPLES = 200000
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data"
@@ -30,12 +33,14 @@ def main():
     print("===Download subset===")
     print("Max per country:", MAX_PER_COUNTRY)
     print("Num countries:", NUM_COUNTRIES)
+    print("Image size:", IMAGE_SIZE)
+    print("Max total images:", MAX_TOTAL_IMAGES)
 
     #Make folders
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
-    #Optional:clear old data
+    #Clear old data
     clear_old_data()
 
     #Load dataset (streaming)
@@ -46,7 +51,15 @@ def main():
     counts = {}
     rows = []
 
-    for example in ds:
+    for scanned, example in enumerate(ds, start=1):
+        #Stop if scan takes too long
+        if scanned >= MAX_SCANNED_EXAMPLES:
+            break
+
+        #Stop if we already have enough images total
+        if len(rows) >= MAX_TOTAL_IMAGES:
+            break
+
         #Read label info
         country_name = example.get("country", None)
         if country_name is None:
@@ -80,8 +93,6 @@ def main():
         counts[country_name] = current_count + 1
         rows.append({"image": filename, "country": country_name})
 
-        print("Saved:", filename)
-
         #Stop when done
         if len(country_list) == NUM_COUNTRIES:
             if all(counts.get(c, 0) >= MAX_PER_COUNTRY for c in country_list):
@@ -99,6 +110,7 @@ def main():
     print("Countries:", country_list)
     print("Counts:", counts)
     print("Total images:", len(rows))
+    print("Scanned examples:", scanned)
     print("Data dir:", DATA_DIR)
 
 
